@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 Viewer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #000000;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+
+        /* Matrix Effect */
+        .matrix-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background: black;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .matrix-bg canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewer {
+            width: 640px;
+            height: 1777px;
+            position: relative;
+            border: 2px solid #00ff00;
+            border-radius: 15px;
+            box-shadow: 0 0 30px #00ff00;
+            background: linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #000000 100%);
+            overflow: hidden;
+            z-index: 1;
+        }
+        .viewer img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.1s ease;
+            opacity: 0;
+        }
+        .viewer img.active {
+            opacity: 1;
+        }
+        .controls {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 0 20px;
+            z-index: 2;
+        }
+        .controls button {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            padding: 20px;
+            cursor: pointer;
+            border-radius: 50%;
+            color: #00ff00;
+            font-size: 24px;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .controls button:hover {
+            background: rgba(0, 0, 0, 0.9);
+            box-shadow: 0 0 15px #00ff00;
+        }
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.1),
+                rgba(0, 255, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+            animation: scanline 5s infinite;
+        }
+        @keyframes scanline {
+            0% {transform: translateY(-100%);}
+            100% {transform: translateY(100%);}
+        }
+        .glitch {
+            position: relative;
+            color: #00ff00;
+            font-size: 24px;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 0;
+            color: #00ff00;
+            background: black;
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+        }
+        .glitch::before {
+            text-shadow: 2px 0 red;
+            animation: glitch-anim 2s infinite ease-in-out;
+        }
+        .glitch::after {
+            text-shadow: -2px 0 blue;
+            animation: glitch-anim 2s infinite ease-in-out reverse;
+        }
+        @keyframes glitch-anim {
+            0% {clip: rect(0, 900px, 0, 0);}
+            25% {clip: rect(10px, 900px, 20px, 0);}
+            50% {clip: rect(20px, 900px, 10px, 0);}
+            75% {clip: rect(30px, 900px, 30px, 0);}
+            100% {clip: rect(0, 900px, 0, 0);}
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-bg">
+        <canvas id="matrix"></canvas>
+    </div>
+    <div class="viewer">
+        <img src="assets/1.gif" class="active" id="frame1">
+        <img src="assets/2.gif" id="frame2">
+        <img src="assets/3.gif" id="frame3">
+        <img src="assets/4.gif" id="frame4">
+        <img src="assets/5.gif" id="frame5">
+        <img src="assets/6.gif" id="frame6">
+        <img src="assets/7.gif" id="frame7">
+        <img src="assets/8.gif" id="frame8">
+        <div class="controls">
+            <button id="prev" class="glitch" data-text="&#9664;">&#9664;</button>
+            <button id="next" class="glitch" data-text="&#9654;">&#9654;</button>
+        </div>
+        <div class="scanline"></div>
+    </div>
+
+    <script>
+        // Matrix effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const letters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        
+        const drops = Array(Math.floor(columns)).fill(0);
+        
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#00ff00';
+            ctx.font = `${fontSize}px monospace`;
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters.charAt(Math.floor(Math.random() * letters.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 50);
+        
+        // 360 viewer
+        let currentFrame = 1;
+        const totalFrames = 8;
+        
+        document.getElementById('next').addEventListener('click', () => {
+            document.getElementById(`frame${currentFrame}`).classList.remove('active');
+            currentFrame = currentFrame < totalFrames ? currentFrame + 1 : 1;
+            document.getElementById(`frame${currentFrame}`).classList.add('active');
+        });
+        
+        document.getElementById('prev').addEventListener('click', () => {
+            document.getElementById(`frame${currentFrame}`).classList.remove('active');
+            currentFrame = currentFrame > 1 ? currentFrame - 1 : totalFrames;
+            document.getElementById(`frame${currentFrame}`).classList.add('active');
+        });
+        
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
